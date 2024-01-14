@@ -1,54 +1,61 @@
-'use client'
+'use client';
 
-import i18next from 'i18next'
-import { useEffect, useState } from 'react'
-import { initReactI18next, useTranslation as useTranslationOrg } from 'react-i18next'
-import { useCookies } from 'react-cookie'
-import resourcesToBackend from 'i18next-resources-to-backend'
-// import LocizeBackend from 'i18next-locize-backend'
-import { getOptions, languages, cookieName } from './settings'
+import { useEffect, useState } from 'react';
+import i18next, { i18n } from 'i18next';
+import { initReactI18next, useTranslation as useTransAlias } from 'react-i18next';
+import resourcesToBackend from 'i18next-resources-to-backend';
+import LanguageDetector from 'i18next-browser-languagedetector';
 
-const runsOnServerSide = typeof window === 'undefined'
+import { type LocaleType, getOptions, availableLocales } from './settings';
 
-// on client side the normal singleton is ok
+const runsOnServerSide = typeof window === 'undefined';
+
+// Initialize i18next for the client side
 i18next
   .use(initReactI18next)
-  .use(resourcesToBackend((language: string, namespace:string) => import(`./locales/${language}/${namespace}.json`)))
-  // .use(LocizeBackend) // locize backend could be used on client side, but prefer to keep it in sync with server side
+  .use(LanguageDetector)
+  .use(
+    resourcesToBackend(
+      (language: LocaleType, namespace: string) =>
+        import(`./dictionaries/${language}/${namespace}.json`)
+    )
+  )
   .init({
     ...getOptions(),
-    lng: undefined, // let detect the language on client side
+    lng: undefined, // detect the language on the client
     detection: {
-      order: ['path', 'htmlTag', 'cookie', 'navigator'],
+      order: ['path', 'htmlTag'],
     },
-    preload: runsOnServerSide ? languages : []
-  })
+    preload: runsOnServerSide ? availableLocales : [],
+  });
 
-export function useTranslation(lng: string, ns?: string, options?:any) {
-  const [cookies, setCookie] = useCookies([cookieName])
-  const ret = useTranslationOrg(ns, options)
-  const { i18n } = ret
+export function useTranslation(lng: LocaleType, ns: string) {
+  const translator = useTransAlias(ns);
+  const { i18n } = translator;
+
+  // Run when content is rendered on server side
   if (runsOnServerSide && lng && i18n.resolvedLanguage !== lng) {
-    i18n.changeLanguage(lng)
+    i18n.changeLanguage(lng);
   } else {
+    // Use our custom implementation when running on client side
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [activeLng, setActiveLng] = useState(i18n.resolvedLanguage)
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      if (activeLng === i18n.resolvedLanguage) return
-      setActiveLng(i18n.resolvedLanguage)
-    }, [activeLng, i18n.resolvedLanguage])
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      if (!lng || i18n.resolvedLanguage === lng) return
-      i18n.changeLanguage(lng)
-    }, [lng, i18n])
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      if (cookies.i18next === lng) return
-      setCookie(cookieName, lng, { path: '/' })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lng, cookies.i18next])
+    useCustomTranslationImplem(i18n, lng);
   }
-  return ret
+  return translator;
+}
+
+function useCustomTranslationImplem(i18n: i18n, lng: LocaleType) {
+  const [activeLng, setActiveLng] = useState(i18n.resolvedLanguage);
+
+  // This effect updates the active language state variable when the resolved language changes,
+  useEffect(() => {
+    if (activeLng === i18n.resolvedLanguage) return;
+    setActiveLng(i18n.resolvedLanguage);
+  }, [activeLng, i18n.resolvedLanguage]);
+
+  // This effect changes the language of the application when the lng prop changes.
+  useEffect(() => {
+    if (!lng || i18n.resolvedLanguage === lng) return;
+    i18n.changeLanguage(lng);
+  }, [lng, i18n]);
 }

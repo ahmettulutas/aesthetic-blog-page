@@ -1,17 +1,18 @@
-export const fallbackLng = 'en'
-export const languages = [fallbackLng, 'tr', 'de']
-export const defaultNS = 'translation'
-export const cookieName = 'i18next'
+export const defaultLanguage = 'en';
+export const availableLocales = [defaultLanguage, 'tr', 'de'];
+export const defaultNS = 'translation';
+export type LocaleType = (typeof availableLocales)[number];
+export const cookieName = 'language';
 
-export function getOptions (lng = fallbackLng, ns = defaultNS) {
+export function getOptions(lng = defaultLanguage, ns = defaultNS) {
   return {
     // debug: true,
-    supportedLngs: languages,
-    // preload: languages,
-    fallbackLng,
+    supportedLngs: availableLocales,
+    // preload: availableLocales,
+    defaultLanguage,
     lng,
     fallbackNS: defaultNS,
     defaultNS,
     ns,
-  }
+  };
 }
