@@ -10,8 +10,6 @@ import { Container } from "@/components/containers/Container";
 
 import Logo from "./Logo";
 import ConnectLinks from "../../connect-links/ConnectLinks";
-import HydrateWrapper from "../../hydrate-wrapper/HydrateWrapper";
-import ThemeSkeleton from "../../loading-skeletons/ThemeSkeleton";
 
 export type HeaderProps = {
   currentLocale: string;
